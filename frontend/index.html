@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plataforma de Anemia</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<script>
+  if (localStorage.getItem("logged") !== "yes") {
+    window.location.href = "login.html";
+  }
+</script>
+
+<body>
+  <div class="layout">
+
+    <!-- HEADER -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo"></div>
+        <span>Plataforma de Anemia</span>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab active" data-target="#enfermera">Enfermera / Paciente</button>
+        <button class="tab" data-target="#medico">Médico tratante</button>
+        <button class="tab" data-target="#coordinador">Coordinador médico</button>
+      </nav>
+    </header>
+
+    <!-- ======================
+        PANTALLA: ENFERMERA
+    ======================= -->
+    <section class="screen active" id="enfermera">
+
+      <h1 class="title">Registro de Triaje <span>— Enfermera</span></h1>
+
+      <div class="grid-2">
+
+        <!-- FORMULARIO -->
+        <div class="card glass">
+
+          <h2 class="section-title">Datos del niño</h2>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Edad (meses)</label>
+              <input id="child_age_months" type="number" placeholder="15" />
+            </div>
+
+            <div class="field">
+              <label>Sexo</label>
+              <select id="child_sex">
+                <option value="">Seleccione</option>
+                <option value="1">Niño</option>
+                <option value="2">Niña</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Peso (kg)</label>
+              <input id="child_weight_kg" type="number" step="0.1" placeholder="30">
+            </div>
+
+            <div class="field">
+              <label>Talla (cm)</label>
+              <input id="child_height_cm" type="number" placeholder="58">
+            </div>
+          </div>
+
+          <h2 class="section-title">Información materna</h2>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Edad de la madre</label>
+              <input id="mother_age_years" type="number" placeholder="28">
+            </div>
+
+            <div class="field">
+              <label>Nivel educativo</label>
+              <select id="mother_education_level_summary">
+                <option value="">Seleccione</option>
+                <option value="0">Sin educación</option>
+                <option value="1">Primaria</option>
+                <option value="2">Secundaria</option>
+                <option value="3">Superior</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Peso de la madre (kg)</label>
+              <input id="mother_weight_kg" type="number" placeholder="60">
+            </div>
+
+            <div class="field">
+              <label>Talla de la madre (cm)</label>
+              <input id="mother_height_cm" type="number" placeholder="160">
+            </div>
+          </div>
+
+          <h2 class="section-title">Historia reproductiva</h2>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Orden de nacimiento</label>
+              <select id="birth_order">
+                <option value="">Seleccione</option>
+                <option value="1">1°</option>
+                <option value="2">2°</option>
+                <option value="3">3°</option>
+                <option value="4">4° o más</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Intervalo (meses)</label>
+              <select id="birth_interval_months">
+                <option value="">Seleccione</option>
+                <option value="12">Menos de 18</option>
+                <option value="21">18–24</option>
+                <option value="30">Más de 24</option>
+              </select>
+            </div>
+          </div>
+
+          <h2 class="section-title">Hábitos de la madre</h2>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Cigarrillos últimas 24h</label>
+              <select id="cigarettes_last24h">
+                <option value="">Seleccione</option>
+                <option value="0">No fuma</option>
+                <option value="1">1 cigarrillo</option>
+                <option value="2">2 cigarrillos</option>
+                <option value="3">3 cigarrillos</option>
+                <option value="4">4 cigarrillos</option>
+                <option value="5">5 cigarrillos</option>
+                <option value="10">Más de 5</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Estado civil</label>
+              <select id="marital_status">
+                <option value="">Seleccione</option>
+                <option value="1">Unida / Casada</option>
+                <option value="2">Soltera</option>
+                <option value="3">Separada</option>
+                <option value="4">Viuda</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field full">
+              <label>¿Actualmente embarazada?</label>
+              <select id="currently_pregnant">
+                <option value="">Seleccione</option>
+                <option value="0">No</option>
+                <option value="1">Sí</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="btn-predict" class="btn primary">Calcular riesgo</button>
+          </div>
+
+        </div>
+
+        <!-- RESULTADOS -->
+        <div class="card glass">
+          <h2 class="section-title">Resultado del modelo</h2>
+
+          <div class="results-grid">
+
+            <div class="result-box">
+              <span class="label">Score</span>
+              <div id="res-score" class="value">—</div>
+            </div>
+
+            <div class="result-box">
+              <span class="label">Clasificación</span>
+              <div id="res-label" class="value">—</div>
+            </div>
+
+            <div class="result-box">
+              <span class="label">Probabilidad</span>
+              <div id="res-prob" class="value">—</div>
+            </div>
+
+          </div>
+
+          <p class="note">*Clasificación generada por el modelo de predicción entrenado con ENDES.*</p>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="medico" class="screen"></section>
+    <section id="coordinador" class="screen"></section>
+
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>

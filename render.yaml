@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: anemia-backend
+    env: python
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    healthCheckPath: "/"
+
+  - type: static
+    name: anemia-frontend
+    rootDir: frontend
+    buildCommand: ""
+    staticPublishPath: "/"

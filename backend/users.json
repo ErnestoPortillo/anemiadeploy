@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "ernesto",
+      "role": "admin"
+    },
+    {
+      "username": "enfermera1",
+      "password": "enf123",
+      "role": "nurse"
+    }
+  ]
+}
