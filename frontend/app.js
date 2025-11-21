@@ -63,7 +63,7 @@ $("#btn-predict").addEventListener("click", async () => {
   //------------------------------------------------------
   let res;
   try {
-    res = await fetch("http://localhost:8000/predict", {
+    res = await fetch("https://anemiadeploy.onrender.com/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
