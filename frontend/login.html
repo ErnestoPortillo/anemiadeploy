@@ -1,59 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Login | Plataforma de Anemia</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acceso | Plataforma de Anemia</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
+<body>
+  <section class="auth-screen" id="auth-screen">
+    <div class="auth-shell">
+      <div class="brand auth-brand">
+        <div class="logo"></div>
+        <div>Plataforma de Anemia</div>
+      </div>
 
-<body class="login-body">
-  <div class="login-card glass">
-    <h2>Iniciar sesión</h2>
+      <div class="auth-copy">
+        <h1>Acceso a la plataforma</h1>
+        <p>Registra un centro médico o crea una cuenta de enfermera asociada a un centro existente.</p>
+      </div>
 
-    <div class="field">
-      <label>Usuario</label>
-      <input id="username" type="text" placeholder="usuario">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-auth="#auth-login">Ingresar</button>
+          <button class="auth-tab" data-auth="#auth-centro">Centro médico</button>
+          <button class="auth-tab" data-auth="#auth-enfermera">Enfermera</button>
+        </div>
+
+        <div class="auth-panel active" id="auth-login">
+          <div class="field">
+            <label class="label">Usuario</label>
+            <input id="login-user" class="input" placeholder="correo@centro.pe" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label class="label">Contraseña</label>
+            <input id="login-pass" class="input" type="password" placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <button class="btn primary auth-submit" data-action="login">Ingresar</button>
+        </div>
+
+        <div class="auth-panel" id="auth-centro">
+          <div class="field">
+            <label class="label">Nombre del centro médico</label>
+            <input id="centro-nombre" class="input" placeholder="Centro de Salud Santa Rosa" />
+          </div>
+          <div class="field">
+            <label class="label">Distrito</label>
+            <select id="centro-distrito">
+              <option value="">Seleccione</option>
+              <option>SJL</option>
+              <option>Comas</option>
+              <option>Ate</option>
+              <option>Callao</option>
+            </select>
+          </div>
+          <button class="btn primary auth-submit" data-action="centro">Registrar centro</button>
+        </div>
+
+        <div class="auth-panel" id="auth-enfermera">
+          <div class="field">
+            <label class="label">Nombre de la enfermera</label>
+            <input id="enf-nombre" class="input" placeholder="María Torres" />
+          </div>
+          <div class="field">
+            <label class="label">Centro médico asociado</label>
+            <select id="enf-centro"></select>
+          </div>
+          <div class="field">
+            <label class="label">Correo</label>
+            <input id="enf-correo" class="input" type="email" placeholder="enfermera@centro.pe" />
+          </div>
+          <div class="field">
+            <label class="label">Contraseña temporal</label>
+            <input id="enf-pass" class="input" type="password" placeholder="••••••••" />
+          </div>
+          <button class="btn primary auth-submit" data-action="enfermera">Registrar enfermera</button>
+        </div>
+
+        <p id="auth-message" class="footer-note auth-message">Conecta con el backend para validar usuarios y guardar registros.</p>
+      </div>
     </div>
+  </section>
 
-    <div class="field">
-      <label>Contraseña</label>
-      <input id="password" type="password" placeholder="contraseña">
-    </div>
-
-    <button id="btn-login" class="btn primary">Ingresar</button>
-
-    <p id="login-error" class="note" style="color:#ff6b6b; display:none;">
-      Usuario o contraseña incorrectos.
-    </p>
-  </div>
-
-  <script>
-    const API_URL = "https://anemiadeploy.onrender.com"; // <--- cambiar luego
-
-    document.getElementById("btn-login").onclick = async () => {
-      const payload = {
-        username: document.getElementById("username").value,
-        password: document.getElementById("password").value
-      };
-
-      const res = await fetch(API_URL + "/login", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data.status === "ok") {
-        // guardar sesión
-        localStorage.setItem("role", data.role);
-
-        // redirigir al dashboard
-        window.location.href = "index.html";
-      } else {
-        document.getElementById("login-error").style.display = "block";
-      }
-    };
-  </script>
+  <script src="login.js"></script>
 </body>
 </html>
