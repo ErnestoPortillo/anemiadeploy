@@ -2,15 +2,30 @@
 # main.py – Backend final
 # =========================
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 import numpy as np
 import pandas as pd
 import joblib
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import User
 
 app = FastAPI(title="Anemia Prediction API")
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "Anemia Prediction API"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # ============================
 #    HABILITAR CORS
@@ -158,13 +173,7 @@ def preprocess_input(data: dict):
 # -------------------------------------------------------
 # 0. LOGIN BÁSICO
 # -------------------------------------------------------
-import json
-
-USER_FILE = os.path.join(BASE_DIR, "users.json")
-
-# Cargar usuarios en memoria
-with open(USER_FILE, "r", encoding="utf-8") as f:
-    USER_DB = json.load(f)["users"]
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class LoginRequest(BaseModel):
     username: str
@@ -172,10 +181,21 @@ class LoginRequest(BaseModel):
 
 
 @app.post("/login")
-def login(data: LoginRequest):
-    for user in USER_DB:
-        if user["username"] == data.username and user["password"] == data.password:
-            return {"status": "ok", "role": user["role"]}
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == data.username).first()
+
+    if not user:
+        return {"status": "error", "message": "Credenciales incorrectas"}
+
+    if user.password_hash.startswith("$2b$"):
+        password_ok = pwd_context.verify(data.password, user.password_hash)
+    else:
+        # Compatibilidad temporal para usuarios de prueba creados manualmente.
+        password_ok = data.password == user.password_hash
+
+    if password_ok:
+        return {"status": "ok", "role": user.role, "userId": user.id}
+
     return {"status": "error", "message": "Credenciales incorrectas"}
 
 
