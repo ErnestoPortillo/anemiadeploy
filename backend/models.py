@@ -1,6 +1,9 @@
 from sqlalchemy import Column, DateTime, Integer, String, func
 
-from database import Base
+try:
+    from database import Base
+except ModuleNotFoundError:
+    from backend.database import Base
 
 
 class User(Base):
@@ -11,4 +14,3 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String(30), nullable=False, default="nurse")
     created_at = Column(DateTime, server_default=func.now())
-

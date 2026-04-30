@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 INSERT INTO users (username, password_hash, role)
-VALUES ('admin', 'admin123', 'admin')
-ON CONFLICT (username) DO NOTHING;
-
+VALUES ('admin', 'admin-123', 'admin')
+ON CONFLICT (username) DO UPDATE
+SET password_hash = EXCLUDED.password_hash,
+    role = EXCLUDED.role;

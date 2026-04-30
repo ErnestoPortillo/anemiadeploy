@@ -12,8 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models import User
+try:
+    from database import get_db
+    from models import User
+except ModuleNotFoundError:
+    from backend.database import get_db
+    from backend.models import User
 
 app = FastAPI(title="Anemia Prediction API")
 
