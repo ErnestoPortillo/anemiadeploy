@@ -338,11 +338,14 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         return {"status": "error", "message": "Credenciales incorrectas"}
 
-    if user.password_hash.startswith("$2b$"):
-        password_ok = pwd_context.verify(data.password, user.password_hash)
-    else:
-        # Compatibilidad temporal para usuarios de prueba creados manualmente.
-        password_ok = data.password == user.password_hash
+    try:
+        if user.password_hash.startswith("$2"):
+            password_ok = pwd_context.verify(data.password[:72], user.password_hash)
+        else:
+            # Compatibilidad temporal para usuarios de prueba creados manualmente.
+            password_ok = data.password == user.password_hash
+    except ValueError:
+        password_ok = False
 
     if password_ok:
         return {
