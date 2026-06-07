@@ -30,8 +30,8 @@ app = FastAPI(title="Anemia Prediction API")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 JWT_SECRET = os.getenv("JWT_SECRET")
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
-SEED_DEFAULT_USERS = os.getenv("SEED_DEFAULT_USERS", "false").lower() == "true"
-RESET_SEED_USER_PASSWORDS = os.getenv("RESET_SEED_USER_PASSWORDS", "false").lower() == "true"
+SEED_DEFAULT_USERS = os.getenv("SEED_DEFAULT_USERS", "true").lower() == "true"
+RESET_SEED_USER_PASSWORDS = os.getenv("RESET_SEED_USER_PASSWORDS", "true").lower() == "true"
 
 if ENVIRONMENT == "production" and not JWT_SECRET:
     raise RuntimeError("Falta JWT_SECRET en producción")
