@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://anemiadeploy.onrender.com";
+const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || "https://anemiadeploy.onrender.com";
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));

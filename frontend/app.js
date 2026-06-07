@@ -1,6 +1,15 @@
-const API_BASE_URL = "https://anemiadeploy.onrender.com";
+const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || "https://anemiadeploy.onrender.com";
 
-if (!localStorage.getItem("role")) {
+const role = localStorage.getItem("role");
+const authToken = localStorage.getItem("authToken");
+const ROLE_SCREENS = {
+  nurse: ["#enfermera"],
+  doctor: ["#medico"],
+  coordinator: ["#coordinador"],
+  admin: ["#enfermera", "#medico", "#coordinador"],
+};
+
+if (!role || !authToken) {
   window.location.href = "login.html";
 }
 
@@ -9,11 +18,42 @@ const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function authHeaders() {
-  const token = localStorage.getItem("authToken");
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Authorization: `Bearer ${authToken}`,
   };
+}
+
+function activateScreen(target) {
+  const button = $(`.tab-btn[data-target="${target}"]`);
+  const screen = $(target);
+  if (!button || !screen) return;
+
+  $$(".tab-btn").forEach((tab) => tab.classList.remove("active"));
+  $$(".screen").forEach((item) => item.classList.remove("active"));
+  button.classList.add("active");
+  screen.classList.add("active");
+}
+
+function applyRoleAccess() {
+  const allowedScreens = ROLE_SCREENS[role] || [];
+  if (!allowedScreens.length) {
+    localStorage.clear();
+    window.location.href = "login.html";
+    return;
+  }
+
+  $$(".tab-btn").forEach((button) => {
+    const allowed = allowedScreens.includes(button.dataset.target);
+    button.hidden = !allowed;
+    button.disabled = !allowed;
+  });
+
+  $$(".screen").forEach((screen) => {
+    screen.hidden = !allowedScreens.includes(`#${screen.id}`);
+  });
+
+  activateScreen(allowedScreens[0]);
 }
 
 function parseOrNull(value, asNumber = false) {
@@ -34,10 +74,9 @@ function setPredictMessage(message, isError = false) {
 
 $$(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
-    $$(".tab-btn").forEach((tab) => tab.classList.remove("active"));
-    $$(".screen").forEach((screen) => screen.classList.remove("active"));
-    btn.classList.add("active");
-    $(btn.dataset.target).classList.add("active");
+    const allowedScreens = ROLE_SCREENS[role] || [];
+    if (!allowedScreens.includes(btn.dataset.target)) return;
+    activateScreen(btn.dataset.target);
   });
 });
 
@@ -68,6 +107,10 @@ $("#btn-predict").addEventListener("click", async () => {
       body: JSON.stringify(payload),
     });
     data = await response.json();
+    if (!response.ok) {
+      setPredictMessage(data.detail || "No tienes permisos para calcular riesgo.", true);
+      return;
+    }
   } catch (error) {
     console.error("Error de conexión con el backend:", error);
     setPredictMessage("No se pudo conectar al servidor de predicción.", true);
@@ -302,6 +345,7 @@ function pintarCoordinador() {
   element.addEventListener(element.tagName === "SELECT" ? "change" : "input", pintarCoordinador);
 });
 
+applyRoleAccess();
 pintarTabla();
 mostrarDetallePaciente(0);
 pintarCoordinador();

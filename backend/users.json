@@ -2,13 +2,23 @@
   "users": [
     {
       "username": "admin",
-      "password": "ernesto",
+      "password": "admin123",
       "role": "admin"
     },
     {
       "username": "enfermera1",
       "password": "enf123",
       "role": "nurse"
+    },
+    {
+      "username": "medico1",
+      "password": "med123",
+      "role": "doctor"
+    },
+    {
+      "username": "coordinador1",
+      "password": "coor123",
+      "role": "coordinator"
     }
   ]
 }

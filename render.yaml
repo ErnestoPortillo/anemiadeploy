@@ -8,8 +8,18 @@ services:
     plan: free
     healthCheckPath: "/health"
     envVars:
+      - key: ENVIRONMENT
+        value: production
       - key: DATABASE_URL
         sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SEED_DEFAULT_USERS
+        value: false
+      - key: ACCESS_TOKEN_EXPIRE_HOURS
+        value: 8
 
   - type: static
     name: anemia-frontend

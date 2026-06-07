@@ -2,7 +2,13 @@
 # main.py – Backend final
 # =========================
 
-from fastapi import Depends, FastAPI
+from datetime import datetime, timedelta, timezone
+import base64
+import hashlib
+import hmac
+import json
+
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from pydantic import BaseModel
 import numpy as np
 import pandas as pd
@@ -21,6 +27,30 @@ except ModuleNotFoundError:
 
 app = FastAPI(title="Anemia Prediction API")
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+JWT_SECRET = os.getenv("JWT_SECRET")
+ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
+SEED_DEFAULT_USERS = os.getenv("SEED_DEFAULT_USERS", "false").lower() == "true"
+
+if ENVIRONMENT == "production" and not JWT_SECRET:
+    raise RuntimeError("Falta JWT_SECRET en producción")
+
+JWT_SECRET = JWT_SECRET or "dev-secret-change-me"
+
+ROLE_PERMISSIONS = {
+    "nurse": {"predict"},
+    "doctor": {"followup"},
+    "coordinator": {"dashboard"},
+    "admin": {"predict", "followup", "dashboard", "manage_users"},
+}
+
+SEED_USERS = [
+    {"username": "admin", "password": "admin123", "role": "admin"},
+    {"username": "enfermera1", "password": "enf123", "role": "nurse"},
+    {"username": "medico1", "password": "med123", "role": "doctor"},
+    {"username": "coordinador1", "password": "coor123", "role": "coordinator"},
+]
+
 
 @app.get("/")
 def root():
@@ -31,14 +61,48 @@ def root():
 def health():
     return {"status": "ok"}
 
+
+@app.on_event("startup")
+def seed_default_users():
+    if not SEED_DEFAULT_USERS:
+        return
+
+    db = next(get_db())
+    try:
+        for seed in SEED_USERS:
+            user = db.query(User).filter(User.username == seed["username"]).first()
+            if user:
+                user.role = seed["role"]
+                continue
+
+            db.add(
+                User(
+                    username=seed["username"],
+                    password_hash=pwd_context.hash(seed["password"]),
+                    role=seed["role"],
+                )
+            )
+        db.commit()
+    finally:
+        db.close()
+
+def get_cors_origins() -> list[str]:
+    origins = os.getenv("CORS_ORIGINS", "")
+    if origins:
+        return [origin.strip() for origin in origins.split(",") if origin.strip()]
+    if ENVIRONMENT == "production":
+        raise RuntimeError("Falta CORS_ORIGINS en producción")
+    return ["*"]
+
+
 # ============================
 #    HABILITAR CORS
 # ============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # ← Permite usar archivo local (file://) sin error
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],   # ← IMPORTANTE para permitir OPTIONS
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -184,6 +248,86 @@ class LoginRequest(BaseModel):
     password: str
 
 
+def _b64url_encode(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("utf-8")
+
+
+def _b64url_decode(value: str) -> bytes:
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(value + padding)
+
+
+def create_access_token(user: User) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(user.id),
+        "username": user.username,
+        "role": user.role,
+        "exp": int((now + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)).timestamp()),
+    }
+    header = {"alg": "HS256", "typ": "JWT"}
+    signing_input = ".".join(
+        [
+            _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8")),
+            _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8")),
+        ]
+    )
+    signature = hmac.new(JWT_SECRET.encode("utf-8"), signing_input.encode("utf-8"), hashlib.sha256).digest()
+    return f"{signing_input}.{_b64url_encode(signature)}"
+
+
+def decode_access_token(token: str) -> dict:
+    try:
+        header_b64, payload_b64, signature_b64 = token.split(".")
+        signing_input = f"{header_b64}.{payload_b64}"
+        expected_signature = hmac.new(JWT_SECRET.encode("utf-8"), signing_input.encode("utf-8"), hashlib.sha256).digest()
+        received_signature = _b64url_decode(signature_b64)
+
+        if not hmac.compare_digest(expected_signature, received_signature):
+            raise ValueError("Invalid signature")
+
+        payload = json.loads(_b64url_decode(payload_b64))
+        if int(payload.get("exp", 0)) < int(datetime.now(timezone.utc).timestamp()):
+            raise ValueError("Expired token")
+
+        return payload
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado",
+        ) from exc
+
+
+def get_current_user(authorization: str = Header(default=""), db: Session = Depends(get_db)) -> User:
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Falta token de autenticación",
+        )
+
+    payload = decode_access_token(token)
+    user = db.query(User).filter(User.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado",
+        )
+    return user
+
+
+def require_roles(*roles: str):
+    def dependency(user: User = Depends(get_current_user)) -> User:
+        if user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para esta acción",
+            )
+        return user
+
+    return dependency
+
+
 @app.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == data.username).first()
@@ -198,7 +342,13 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         password_ok = data.password == user.password_hash
 
     if password_ok:
-        return {"status": "ok", "role": user.role, "userId": user.id}
+        return {
+            "status": "ok",
+            "role": user.role,
+            "userId": user.id,
+            "username": user.username,
+            "token": create_access_token(user),
+        }
 
     return {"status": "error", "message": "Credenciales incorrectas"}
 
@@ -207,7 +357,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 # 5. ENDPOINT de predicción
 # -------------------------------------------------------
 @app.post("/predict")
-def predict(data: InputData):
+def predict(data: InputData, current_user: User = Depends(require_roles("nurse", "admin"))):
 
     # Preprocesar datos → produce features
     X = preprocess_input(data.dict())
