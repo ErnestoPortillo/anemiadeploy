@@ -31,6 +31,7 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 JWT_SECRET = os.getenv("JWT_SECRET")
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "8"))
 SEED_DEFAULT_USERS = os.getenv("SEED_DEFAULT_USERS", "false").lower() == "true"
+RESET_SEED_USER_PASSWORDS = os.getenv("RESET_SEED_USER_PASSWORDS", "false").lower() == "true"
 
 if ENVIRONMENT == "production" and not JWT_SECRET:
     raise RuntimeError("Falta JWT_SECRET en producción")
@@ -73,6 +74,8 @@ def seed_default_users():
             user = db.query(User).filter(User.username == seed["username"]).first()
             if user:
                 user.role = seed["role"]
+                if RESET_SEED_USER_PASSWORDS:
+                    user.password_hash = pwd_context.hash(seed["password"])
                 continue
 
             db.add(
