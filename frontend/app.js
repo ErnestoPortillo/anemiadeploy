@@ -1,4 +1,5 @@
 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || "https://anemiadeploy.onrender.com";
+const LIMA_DISTRICTS = window.APP_CONFIG?.LIMA_DISTRICTS || [];
 
 const role = localStorage.getItem("role");
 const authToken = localStorage.getItem("authToken");
@@ -172,11 +173,11 @@ function calcularModeloLocal(patient) {
 }
 
 const pacientes = [
-  { nombre: "Paciente 1", hcl: "HCL-0001", distrito: "SJL", edad: 15, sexo: "Femenino", peso: 9.4, talla: 72, madreEdad: 19, educacion: "Primaria", madrePeso: 48, madreTalla: 148, orden: "Primero", intervalo: "48 o más", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "No", fecha: "2025-11-30", scoreSerie: [58, 62, 68, 72] },
+  { nombre: "Paciente 1", hcl: "HCL-0001", distrito: "San Juan de Lurigancho", edad: 15, sexo: "Femenino", peso: 9.4, talla: 72, madreEdad: 19, educacion: "Primaria", madrePeso: 48, madreTalla: 148, orden: "Primero", intervalo: "48 o más", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "No", fecha: "2025-11-30", scoreSerie: [58, 62, 68, 72] },
   { nombre: "Paciente 2", hcl: "HCL-0002", distrito: "Comas", edad: 17, sexo: "Masculino", peso: 11.1, talla: 77, madreEdad: 28, educacion: "Secundaria", madrePeso: 60, madreTalla: 160, orden: "Segundo", intervalo: "Menos de 24", cigarrillos: "Sí", estadoCivil: "Soltera", embarazada: "No", fecha: "2025-11-29", scoreSerie: [44, 47, 52, 59] },
   { nombre: "Paciente 3", hcl: "HCL-0003", distrito: "Ate", edad: 38, sexo: "Femenino", peso: 15.8, talla: 91, madreEdad: 31, educacion: "Superior", madrePeso: 66, madreTalla: 158, orden: "Segundo", intervalo: "24 a 47", cigarrillos: "No", estadoCivil: "Casada", embarazada: "No", fecha: "2025-11-28", scoreSerie: [33, 31, 35, 37] },
-  { nombre: "Paciente 4", hcl: "HCL-0004", distrito: "Callao", edad: 22, sexo: "Masculino", peso: 9.8, talla: 74, madreEdad: 37, educacion: "Primaria", madrePeso: 52, madreTalla: 149, orden: "Tercero o más", intervalo: "Menos de 24", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "Sí", fecha: "2025-11-28", scoreSerie: [64, 69, 73, 78] },
-  { nombre: "Paciente 5", hcl: "HCL-0005", distrito: "SJL", edad: 33, sexo: "Femenino", peso: 13.2, talla: 86, madreEdad: 24, educacion: "Secundaria", madrePeso: 55, madreTalla: 153, orden: "Tercero o más", intervalo: "24 a 47", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "No", fecha: "2025-11-27", scoreSerie: [48, 50, 53, 55] },
+  { nombre: "Paciente 4", hcl: "HCL-0004", distrito: "Los Olivos", edad: 22, sexo: "Masculino", peso: 9.8, talla: 74, madreEdad: 37, educacion: "Primaria", madrePeso: 52, madreTalla: 149, orden: "Tercero o más", intervalo: "Menos de 24", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "Sí", fecha: "2025-11-28", scoreSerie: [64, 69, 73, 78] },
+  { nombre: "Paciente 5", hcl: "HCL-0005", distrito: "San Juan de Lurigancho", edad: 33, sexo: "Femenino", peso: 13.2, talla: 86, madreEdad: 24, educacion: "Secundaria", madrePeso: 55, madreTalla: 153, orden: "Tercero o más", intervalo: "24 a 47", cigarrillos: "No", estadoCivil: "Conviviente", embarazada: "No", fecha: "2025-11-27", scoreSerie: [48, 50, 53, 55] },
   { nombre: "Paciente 6", hcl: "HCL-0006", distrito: "Comas", edad: 12, sexo: "Masculino", peso: 8.6, talla: 70, madreEdad: 18, educacion: "Primaria", madrePeso: 47, madreTalla: 151, orden: "Primero", intervalo: "48 o más", cigarrillos: "No", estadoCivil: "Soltera", embarazada: "No", fecha: "2025-11-26", scoreSerie: [66, 70, 75, 80] },
   { nombre: "Paciente 7", hcl: "HCL-0007", distrito: "Ate", edad: 49, sexo: "Femenino", peso: 18.6, talla: 98, madreEdad: 29, educacion: "Superior", madrePeso: 73, madreTalla: 162, orden: "Segundo", intervalo: "48 o más", cigarrillos: "No", estadoCivil: "Casada", embarazada: "No", fecha: "2025-11-26", scoreSerie: [24, 28, 30, 29] },
 ].map((patient, id) => ({ ...patient, id, ...calcularModeloLocal(patient) }));
@@ -224,6 +225,17 @@ function mostrarDetallePaciente(id) {
   setText("#det-reproductiva", `${patient.orden}; intervalo ${patient.intervalo}`);
   setText("#det-habitos", `Tabaco: ${patient.cigarrillos}; estado civil: ${patient.estadoCivil}; embarazada: ${patient.embarazada}`);
   pintarLinea($("#det-trend"), patient.scoreSerie, { min: 0, max: 100 });
+}
+
+function renderDistrictFilters() {
+  const select = $("#f-distrito");
+  select.innerHTML = '<option value="">Todos</option>';
+  LIMA_DISTRICTS.forEach((distrito) => {
+    const option = document.createElement("option");
+    option.value = distrito;
+    option.textContent = distrito;
+    select.appendChild(option);
+  });
 }
 
 $("#med-buscar").addEventListener("input", pintarTabla);
@@ -357,6 +369,7 @@ function pintarCoordinador() {
 });
 
 applyRoleAccess();
+renderDistrictFilters();
 pintarTabla();
 mostrarDetallePaciente(0);
 pintarCoordinador();

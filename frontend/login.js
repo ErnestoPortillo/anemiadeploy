@@ -2,9 +2,10 @@ const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || "https://anemiadeploy.on
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+const LIMA_DISTRICTS = window.APP_CONFIG?.LIMA_DISTRICTS || [];
 
 const centrosMedicos = [
-  { id: "seed-san-gabriel", nombre: "Centro de Salud San Gabriel", distrito: "SJL" },
+  { id: "seed-san-gabriel", nombre: "Centro de Salud San Gabriel", distrito: "San Juan de Lurigancho" },
   { id: "seed-collique", nombre: "Puesto de Salud Collique", distrito: "Comas" },
   { id: "seed-ate", nombre: "Centro Materno Infantil Ate", distrito: "Ate" },
 ];
@@ -22,6 +23,17 @@ function renderCentros() {
     const option = document.createElement("option");
     option.value = String(centro.id);
     option.textContent = `${centro.nombre} — ${centro.distrito}`;
+    select.appendChild(option);
+  });
+}
+
+function renderDistrictSelect() {
+  const select = $("#centro-distrito");
+  select.innerHTML = '<option value="">Seleccione</option>';
+  LIMA_DISTRICTS.forEach((distrito) => {
+    const option = document.createElement("option");
+    option.value = distrito;
+    option.textContent = distrito;
     select.appendChild(option);
   });
 }
@@ -176,5 +188,6 @@ $$(".auth-submit").forEach((btn) => {
   });
 });
 
+renderDistrictSelect();
 renderCentros();
 cargarCentrosRegistrados();
