@@ -309,10 +309,29 @@ function mostrarDetallePaciente(id) {
   setText("#det-edad-sexo", `${patient.edad} meses / ${patient.sexo}`);
   setText("#det-distrito", patient.distrito);
   setText("#det-medidas", `${patient.peso} kg, ${patient.talla} cm`);
-  setText("#det-madre", `${patient.madreEdad} años, ${patient.educacion}, ${patient.madrePeso} kg, ${patient.madreTalla} cm`);
-  setText("#det-reproductiva", `${patient.orden}; intervalo ${patient.intervalo}`);
-  setText("#det-habitos", `Tabaco: ${patient.cigarrillos}; estado civil: ${patient.estadoCivil}; embarazada: ${patient.embarazada}`);
+  renderDetailGrid("#det-madre", [
+    ["Edad", `${patient.madreEdad} años`],
+    ["Educación", patient.educacion],
+    ["Peso", `${patient.madrePeso} kg`],
+    ["Talla", `${patient.madreTalla} cm`],
+  ]);
+  renderDetailGrid("#det-reproductiva", [
+    ["Orden", patient.orden],
+    ["Intervalo", patient.intervalo],
+  ]);
+  renderDetailGrid("#det-habitos", [
+    ["Tabaco", patient.cigarrillos],
+    ["Estado civil", patient.estadoCivil],
+    ["Embarazada", patient.embarazada],
+  ]);
   pintarLinea($("#det-trend"), patient.scoreSerie, { min: 0, max: 100 });
+}
+
+function renderDetailGrid(selector, rows) {
+  const node = $(selector);
+  node.innerHTML = rows
+    .map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`)
+    .join("");
 }
 
 function renderDistrictFilters() {
