@@ -76,6 +76,11 @@ function renderSessionCenter() {
   setText("#session-center", label || "No asignado");
 }
 
+function logout() {
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
 function setPredictMessage(message, isError = false) {
   const node = $("#predict-message");
   node.textContent = message;
@@ -158,6 +163,8 @@ $$(".tab-btn").forEach((btn) => {
     activateScreen(btn.dataset.target);
   });
 });
+
+$("#btn-logout").addEventListener("click", logout);
 
 $("#btn-predict").addEventListener("click", async () => {
   if (!validateTriageForm()) return;

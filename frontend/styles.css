@@ -76,6 +76,12 @@ header {
   gap: 12px;
 }
 
+.header-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
 .tab-btn,
 .auth-tab {
   background: #0e2140;
@@ -269,6 +275,11 @@ select:focus {
   background: #0e2140;
   border: 1px solid rgba(148, 163, 184, .18);
   color: var(--text);
+}
+
+.logout-btn {
+  min-height: 36px;
+  white-space: nowrap;
 }
 
 .btn-mini {
@@ -526,6 +537,11 @@ thead th {
 
   .tabs {
     flex-wrap: wrap;
+  }
+
+  .header-actions {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .auth-shell,
