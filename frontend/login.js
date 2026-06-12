@@ -20,10 +20,37 @@ function renderCentros() {
   select.innerHTML = '<option value="">Seleccione</option>';
   centrosMedicos.forEach((centro) => {
     const option = document.createElement("option");
-    option.value = centro.id;
+    option.value = String(centro.id);
     option.textContent = `${centro.nombre} — ${centro.distrito}`;
     select.appendChild(option);
   });
+}
+
+function upsertCentro(centro) {
+  const normalized = {
+    id: String(centro.id || centro.nombre),
+    nombre: centro.nombre,
+    distrito: centro.distrito,
+  };
+  const index = centrosMedicos.findIndex((item) => String(item.id) === normalized.id || item.nombre === normalized.nombre);
+
+  if (index >= 0) {
+    centrosMedicos[index] = normalized;
+    return;
+  }
+
+  centrosMedicos.push(normalized);
+}
+
+async function getJson(path) {
+  const response = await fetch(`${API_BASE_URL}${path}`);
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.detail || data.message || "El servidor no pudo completar la solicitud.");
+  }
+
+  return data;
 }
 
 async function requestJson(path, payload) {
@@ -35,7 +62,7 @@ async function requestJson(path, payload) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.message || "El servidor no pudo completar la solicitud.");
+    throw new Error(data.detail || data.message || "El servidor no pudo completar la solicitud.");
   }
   return data;
 }
@@ -84,18 +111,18 @@ async function registrarCentro() {
 
   try {
     const data = await requestJson("/medical-centers", payload);
-    centrosMedicos.push({ id: data.id || payload.nombre, ...payload });
+    upsertCentro({ id: data.id, nombre: data.nombre || payload.nombre, distrito: data.distrito || payload.distrito });
     renderCentros();
+    $("#centro-nombre").value = "";
+    $("#centro-distrito").value = "";
     showMessage(`Centro médico registrado: ${payload.nombre}.`);
   } catch (error) {
-    centrosMedicos.push({ id: payload.nombre, ...payload });
-    renderCentros();
-    showMessage("El backend todavía no tiene /medical-centers; el centro quedó disponible solo en esta pantalla.", true);
+    showMessage(error.message || "No se pudo registrar el centro médico.", true);
   }
 }
 
 async function registrarEnfermera() {
-  const centro = centrosMedicos.find((item) => item.id === $("#enf-centro").value);
+  const centro = centrosMedicos.find((item) => String(item.id) === $("#enf-centro").value);
   const payload = {
     nombre: $("#enf-nombre").value.trim(),
     centro_id: centro?.id || "",
@@ -116,6 +143,16 @@ async function registrarEnfermera() {
   } catch (error) {
     showMessage("El backend todavía no tiene /nurses; deja listo ese endpoint para guardar la cuenta en BD.", true);
   }
+}
+
+async function cargarCentrosRegistrados() {
+  try {
+    const data = await getJson("/medical-centers");
+    if (Array.isArray(data)) {
+      data.forEach(upsertCentro);
+      renderCentros();
+    }
+  } catch (error) {}
 }
 
 $$(".auth-tab").forEach((btn) => {
@@ -140,3 +177,4 @@ $$(".auth-submit").forEach((btn) => {
 });
 
 renderCentros();
+cargarCentrosRegistrados();

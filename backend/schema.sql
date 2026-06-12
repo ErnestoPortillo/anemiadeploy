@@ -6,6 +6,19 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS medical_centers (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(120) UNIQUE NOT NULL,
+    distrito VARCHAR(60) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS ix_medical_centers_nombre
+    ON medical_centers (nombre);
+
+CREATE INDEX IF NOT EXISTS ix_medical_centers_distrito
+    ON medical_centers (distrito);
+
 INSERT INTO users (username, password_hash, role)
 VALUES
     ('admin', 'admin123', 'admin'),

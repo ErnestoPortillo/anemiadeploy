@@ -19,11 +19,11 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 try:
-    from database import get_db
-    from models import User
+    from database import Base, engine, get_db
+    from models import MedicalCenter, User
 except ModuleNotFoundError:
-    from backend.database import get_db
-    from backend.models import User
+    from backend.database import Base, engine, get_db
+    from backend.models import MedicalCenter, User
 
 app = FastAPI(title="Anemia Prediction API")
 
@@ -65,6 +65,8 @@ def health():
 
 @app.on_event("startup")
 def seed_default_users():
+    Base.metadata.create_all(bind=engine)
+
     if not SEED_DEFAULT_USERS:
         return
 
@@ -251,6 +253,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class MedicalCenterRequest(BaseModel):
+    nombre: str
+    distrito: str
+
+
 def _b64url_encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("utf-8")
 
@@ -357,6 +364,49 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         }
 
     return {"status": "error", "message": "Credenciales incorrectas"}
+
+
+@app.get("/medical-centers")
+def list_medical_centers(db: Session = Depends(get_db)):
+    centers = db.query(MedicalCenter).order_by(MedicalCenter.nombre.asc()).all()
+    return [
+        {
+            "id": center.id,
+            "nombre": center.nombre,
+            "distrito": center.distrito,
+        }
+        for center in centers
+    ]
+
+
+@app.post("/medical-centers", status_code=status.HTTP_201_CREATED)
+def create_medical_center(data: MedicalCenterRequest, db: Session = Depends(get_db)):
+    nombre = data.nombre.strip()
+    distrito = data.distrito.strip()
+
+    if not nombre or not distrito:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completa el nombre del centro medico y su distrito.",
+        )
+
+    existing = db.query(MedicalCenter).filter(MedicalCenter.nombre == nombre).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un centro medico con ese nombre.",
+        )
+
+    center = MedicalCenter(nombre=nombre, distrito=distrito)
+    db.add(center)
+    db.commit()
+    db.refresh(center)
+
+    return {
+        "id": center.id,
+        "nombre": center.nombre,
+        "distrito": center.distrito,
+    }
 
 
 # ------------------------------------------------------- 
