@@ -417,14 +417,18 @@ function contarPor(lista, key) {
 function pacientesFiltradosCoordinador() {
   const distrito = $("#f-distrito").value;
   const estado = $("#f-estado").value;
-  const rango = ($("#f-edad").value || "").match(/\d+/g)?.map(Number) || [];
-  const fechas = ($("#f-fecha").value || "").match(/\d{4}-\d{2}-\d{2}/g) || [];
+  const edadMin = parseOrNull($("#f-edad-min").value, true);
+  const edadMax = parseOrNull($("#f-edad-max").value, true);
+  const fechaDesde = $("#f-fecha-desde").value;
+  const fechaHasta = $("#f-fecha-hasta").value;
 
   return pacientes
     .filter((patient) => !distrito || patient.distrito === distrito)
     .filter((patient) => !estado || patient.riesgo === estado)
-    .filter((patient) => rango.length < 2 || (patient.edad >= rango[0] && patient.edad <= rango[1]))
-    .filter((patient) => fechas.length < 2 || (patient.fecha >= fechas[0] && patient.fecha <= fechas[1]));
+    .filter((patient) => edadMin === null || patient.edad >= edadMin)
+    .filter((patient) => edadMax === null || patient.edad <= edadMax)
+    .filter((patient) => !fechaDesde || patient.fecha >= fechaDesde)
+    .filter((patient) => !fechaHasta || patient.fecha <= fechaHasta);
 }
 
 function pintarCoordinador() {
@@ -444,7 +448,7 @@ function pintarCoordinador() {
   pintarBarras($("#coor-bars"), distritos);
 }
 
-["f-distrito", "f-edad", "f-fecha", "f-estado"].forEach((id) => {
+["f-distrito", "f-edad-min", "f-edad-max", "f-fecha-desde", "f-fecha-hasta", "f-estado"].forEach((id) => {
   const element = $(`#${id}`);
   element.addEventListener(element.tagName === "SELECT" ? "change" : "input", pintarCoordinador);
 });

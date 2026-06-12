@@ -239,13 +239,19 @@
               <option value="">Todos</option>
             </select>
           </div>
-          <div class="field field-small">
-            <label class="label">Rango de edad (meses)</label>
-            <input id="f-edad" class="input" placeholder="6-59" />
+          <div class="field field-range">
+            <label class="label">Edad (meses)</label>
+            <div class="range-inputs">
+              <input id="f-edad-min" class="input" type="number" min="0" placeholder="Desde" />
+              <input id="f-edad-max" class="input" type="number" min="0" placeholder="Hasta" />
+            </div>
           </div>
-          <div class="field field-medium">
-            <label class="label">Fecha (aaaa-mm-dd a aaaa-mm-dd)</label>
-            <input id="f-fecha" class="input" placeholder="2025-09-01 a 2025-11-30" />
+          <div class="field field-date-range">
+            <label class="label">Fecha</label>
+            <div class="range-inputs">
+              <input id="f-fecha-desde" class="input" type="date" />
+              <input id="f-fecha-hasta" class="input" type="date" />
+            </div>
           </div>
           <div class="field field-small">
             <label class="label">Estado</label>
