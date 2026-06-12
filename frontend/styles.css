@@ -221,6 +221,11 @@ select:focus {
   box-shadow: 0 0 0 2px rgba(56, 189, 248, .25);
 }
 
+.input-error {
+  border-color: rgba(239, 68, 68, .9);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, .2);
+}
+
 .actions {
   display: flex;
   gap: 10px;

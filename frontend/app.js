@@ -82,6 +82,60 @@ function setPredictMessage(message, isError = false) {
   node.style.color = isError ? "#ffb4ab" : "#aeb8c6";
 }
 
+const TRIAGE_REQUIRED_FIELDS = [
+  { id: "child_age_months", label: "Edad (meses)" },
+  { id: "child_sex", label: "Sexo" },
+  { id: "child_weight_kg", label: "Peso (kg)" },
+  { id: "child_height_cm", label: "Talla (cm)" },
+  { id: "mother_age_years", label: "Edad de la madre" },
+  { id: "mother_education_level_summary", label: "Nivel educativo" },
+  { id: "mother_weight_kg", label: "Peso de la madre" },
+  { id: "mother_height_cm", label: "Talla de la madre" },
+  { id: "birth_order", label: "Orden de nacimiento" },
+  { id: "birth_interval_months", label: "Intervalo (meses)" },
+  { id: "cigarettes_last24h", label: "Cigarrillos ultimas 24h" },
+  { id: "marital_status", label: "Estado civil" },
+  { id: "currently_pregnant", label: "Actualmente embarazada" },
+];
+
+function clearTriageValidation() {
+  TRIAGE_REQUIRED_FIELDS.forEach(({ id }) => {
+    const field = $(`#${id}`);
+    field.classList.remove("input-error");
+    field.removeAttribute("aria-invalid");
+  });
+}
+
+function validateTriageForm() {
+  const missing = TRIAGE_REQUIRED_FIELDS.filter(({ id }) => {
+    const field = $(`#${id}`);
+    const isEmpty = field.value === "";
+    field.classList.toggle("input-error", isEmpty);
+    if (isEmpty) field.setAttribute("aria-invalid", "true");
+    else field.removeAttribute("aria-invalid");
+    return isEmpty;
+  });
+
+  if (missing.length) {
+    const firstMissing = $(`#${missing[0].id}`);
+    firstMissing.focus();
+    setPredictMessage(`Completa los campos obligatorios: ${missing.map((item) => item.label).join(", ")}.`, true);
+    return false;
+  }
+
+  return true;
+}
+
+TRIAGE_REQUIRED_FIELDS.forEach(({ id }) => {
+  const field = $(`#${id}`);
+  field.addEventListener(field.tagName === "SELECT" ? "change" : "input", () => {
+    if (field.value !== "") {
+      field.classList.remove("input-error");
+      field.removeAttribute("aria-invalid");
+    }
+  });
+});
+
 $$(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const allowedScreens = ROLE_SCREENS[role] || [];
@@ -91,6 +145,8 @@ $$(".tab-btn").forEach((btn) => {
 });
 
 $("#btn-predict").addEventListener("click", async () => {
+  if (!validateTriageForm()) return;
+
   const payload = {
     child_age_months: parseOrNull($("#child_age_months").value, true),
     child_sex: parseOrNull($("#child_sex").value, true),
@@ -108,6 +164,7 @@ $("#btn-predict").addEventListener("click", async () => {
   };
 
   setPredictMessage("Calculando riesgo...");
+  clearTriageValidation();
 
   let data;
   try {
