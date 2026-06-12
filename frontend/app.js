@@ -355,32 +355,43 @@ function pintarLinea(svg, serie, { min = 0, max = 100 } = {}) {
 function pintarBarras(svg, data) {
   svg.innerHTML = "";
   const { width, height } = svg.viewBox.baseVal;
-  const pad = 24;
+  const pad = 36;
   const max = Math.max(...data.map((item) => item.v), 1);
+  const total = data.reduce((sum, item) => sum + item.v, 0);
 
   if (!data.length) {
     svg.insertAdjacentHTML("beforeend", `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" class="tick">Sin datos</text>`);
     return;
   }
 
-  const barWidth = 42;
-  const gap = 24;
+  const usableWidth = width - 2 * pad;
+  const gap = 18;
+  const barWidth = Math.max(34, Math.min(58, (usableWidth - gap * (data.length - 1)) / data.length));
+  const startX = pad + Math.max(0, (usableWidth - (barWidth * data.length + gap * (data.length - 1))) / 2);
+
   data.forEach((item, index) => {
-    const barHeight = (item.v / max) * (height - 2 * pad);
-    const barX = pad + index * (barWidth + gap);
+    const percent = total ? Math.round((item.v * 100) / total) : 0;
+    const barHeight = (item.v / max) * (height - 2 * pad - 24);
+    const barX = startX + index * (barWidth + gap);
     const barY = height - pad - barHeight;
     svg.insertAdjacentHTML("beforeend", `<rect x="${barX}" y="${barY}" width="${barWidth}" height="${barHeight}" class="bar"/>`);
-    svg.insertAdjacentHTML("beforeend", `<text x="${barX + barWidth / 2}" y="${height - pad + 14}" text-anchor="middle" class="tick">${item.k}</text>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="${barX + barWidth / 2}" y="${barY - 18}" text-anchor="middle" class="chart-value">${item.v}</text>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="${barX + barWidth / 2}" y="${barY - 4}" text-anchor="middle" class="chart-percent">${percent}%</text>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="${barX + barWidth / 2}" y="${height - pad + 14}" text-anchor="middle" class="tick">${shortLabel(item.k)}</text>`);
   });
   svg.insertAdjacentHTML("beforeend", `<line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" class="axis"/>`);
+}
+
+function shortLabel(label) {
+  return label.length > 12 ? `${label.slice(0, 10)}...` : label;
 }
 
 function pintarDonut(svg, items) {
   svg.innerHTML = "";
   const { width, height } = svg.viewBox.baseVal;
-  const cx = width / 2;
+  const cx = 82;
   const cy = height / 2;
-  const r = 60;
+  const r = 64;
   const total = items.reduce((sum, item) => sum + item.v, 0);
   const visibleItems = items.filter((item) => item.v > 0);
   const colors = { Bajo: "#22c55e", Moderado: "#f59e0b", Alto: "#ef4444" };
@@ -394,6 +405,7 @@ function pintarDonut(svg, items) {
   if (visibleItems.length === 1) {
     const item = visibleItems[0];
     svg.insertAdjacentHTML("beforeend", `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colors[item.k]}" opacity="0.8"></circle>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy - r - 8}" text-anchor="middle" class="chart-percent">100%</text>`);
   } else {
     visibleItems.forEach((item) => {
       const fraction = item.v / total;
@@ -402,15 +414,30 @@ function pintarDonut(svg, items) {
       const y1 = cy + r * Math.sin(angle);
       const x2 = cx + r * Math.cos(nextAngle);
       const y2 = cy + r * Math.sin(nextAngle);
+      const labelAngle = angle + (nextAngle - angle) / 2;
+      const labelX = cx + (r + 20) * Math.cos(labelAngle);
+      const labelY = cy + (r + 20) * Math.sin(labelAngle);
       const large = fraction > .5 ? 1 : 0;
       const path = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${cx} ${cy} Z`;
       svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="${colors[item.k]}" opacity="0.8"></path>`);
+      if (fraction >= 0.12) {
+        svg.insertAdjacentHTML("beforeend", `<text x="${labelX}" y="${labelY}" text-anchor="middle" class="chart-percent">${Math.round(fraction * 100)}%</text>`);
+      }
       angle = nextAngle;
     });
   }
 
   svg.insertAdjacentHTML("beforeend", `<circle cx="${cx}" cy="${cy}" r="34" fill="#0b1220" stroke="rgba(255,255,255,.12)"/>`);
-  svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy}" text-anchor="middle" class="tick">${visibleItems.map((item) => `${item.k}: ${item.v}`).join(" • ")}</text>`);
+  svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy - 2}" text-anchor="middle" class="chart-value">${total}</text>`);
+  svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy + 14}" text-anchor="middle" class="tick">total</text>`);
+
+  items.forEach((item, index) => {
+    const percent = total ? Math.round((item.v * 100) / total) : 0;
+    const y = 46 + index * 38;
+    svg.insertAdjacentHTML("beforeend", `<rect x="185" y="${y - 12}" width="12" height="12" rx="2" fill="${colors[item.k]}"></rect>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="206" y="${y - 2}" class="chart-legend">${item.k}</text>`);
+    svg.insertAdjacentHTML("beforeend", `<text x="206" y="${y + 14}" class="tick">${item.v} pacientes (${percent}%)</text>`);
+  });
 }
 
 function contarPor(lista, key) {
