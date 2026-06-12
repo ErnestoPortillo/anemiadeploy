@@ -281,25 +281,36 @@ function pintarDonut(svg, items) {
   const cx = width / 2;
   const cy = height / 2;
   const r = 60;
-  const total = items.reduce((sum, item) => sum + item.v, 0) || 1;
+  const total = items.reduce((sum, item) => sum + item.v, 0);
+  const visibleItems = items.filter((item) => item.v > 0);
   const colors = { Bajo: "#22c55e", Moderado: "#f59e0b", Alto: "#ef4444" };
   let angle = -Math.PI / 2;
 
-  items.forEach((item) => {
-    const fraction = item.v / total;
-    const nextAngle = angle + fraction * 2 * Math.PI;
-    const x1 = cx + r * Math.cos(angle);
-    const y1 = cy + r * Math.sin(angle);
-    const x2 = cx + r * Math.cos(nextAngle);
-    const y2 = cy + r * Math.sin(nextAngle);
-    const large = fraction > .5 ? 1 : 0;
-    const path = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${cx} ${cy} Z`;
-    svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="${colors[item.k]}" opacity="0.8"></path>`);
-    angle = nextAngle;
-  });
+  if (!total) {
+    svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy}" text-anchor="middle" class="tick">Sin datos</text>`);
+    return;
+  }
+
+  if (visibleItems.length === 1) {
+    const item = visibleItems[0];
+    svg.insertAdjacentHTML("beforeend", `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colors[item.k]}" opacity="0.8"></circle>`);
+  } else {
+    visibleItems.forEach((item) => {
+      const fraction = item.v / total;
+      const nextAngle = angle + fraction * 2 * Math.PI;
+      const x1 = cx + r * Math.cos(angle);
+      const y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(nextAngle);
+      const y2 = cy + r * Math.sin(nextAngle);
+      const large = fraction > .5 ? 1 : 0;
+      const path = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${cx} ${cy} Z`;
+      svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="${colors[item.k]}" opacity="0.8"></path>`);
+      angle = nextAngle;
+    });
+  }
 
   svg.insertAdjacentHTML("beforeend", `<circle cx="${cx}" cy="${cy}" r="34" fill="#0b1220" stroke="rgba(255,255,255,.12)"/>`);
-  svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy}" text-anchor="middle" class="tick">${items.map((item) => `${item.k}: ${item.v}`).join(" • ")}</text>`);
+  svg.insertAdjacentHTML("beforeend", `<text x="${cx}" y="${cy}" text-anchor="middle" class="tick">${visibleItems.map((item) => `${item.k}: ${item.v}`).join(" • ")}</text>`);
 }
 
 function contarPor(lista, key) {
