@@ -1,4 +1,5 @@
-from sqlalchemy import Column, DateTime, Integer, String, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy.orm import relationship
 
 try:
     from database import Base
@@ -13,7 +14,11 @@ class User(Base):
     username = Column(String(80), unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
     role = Column(String(30), nullable=False, default="nurse")
+    full_name = Column(String(120), nullable=True)
+    medical_center_id = Column(Integer, ForeignKey("medical_centers.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+    medical_center = relationship("MedicalCenter")
 
 
 class MedicalCenter(Base):

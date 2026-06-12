@@ -4,11 +4,7 @@ const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 const LIMA_DISTRICTS = window.APP_CONFIG?.LIMA_DISTRICTS || [];
 
-const centrosMedicos = [
-  { id: "seed-san-gabriel", nombre: "Centro de Salud San Gabriel", distrito: "San Juan de Lurigancho" },
-  { id: "seed-collique", nombre: "Puesto de Salud Collique", distrito: "Comas" },
-  { id: "seed-ate", nombre: "Centro Materno Infantil Ate", distrito: "Ate" },
-];
+const centrosMedicos = [];
 
 function showMessage(message, isError = false) {
   const node = $("#auth-message");
@@ -81,8 +77,13 @@ async function requestJson(path, payload) {
 
 function saveSession(data) {
   localStorage.setItem("role", data.role || "nurse");
+  localStorage.setItem("medicalCenterName", data.medicalCenterName || "No asignado");
+  localStorage.setItem("medicalCenterDistrict", data.medicalCenterDistrict || "");
+  localStorage.setItem("fullName", data.fullName || data.username || "");
   if (data.token) localStorage.setItem("authToken", data.token);
   if (data.userId) localStorage.setItem("userId", data.userId);
+  if (data.medicalCenterId) localStorage.setItem("medicalCenterId", data.medicalCenterId);
+  else localStorage.removeItem("medicalCenterId");
   window.location.href = "index.html";
 }
 
@@ -137,7 +138,7 @@ async function registrarEnfermera() {
   const centro = centrosMedicos.find((item) => String(item.id) === $("#enf-centro").value);
   const payload = {
     nombre: $("#enf-nombre").value.trim(),
-    centro_id: centro?.id || "",
+    centro_id: centro ? Number(centro.id) : "",
     correo: $("#enf-correo").value.trim(),
     password: $("#enf-pass").value,
   };
@@ -151,9 +152,13 @@ async function registrarEnfermera() {
 
   try {
     await requestJson("/nurses", payload);
+    $("#enf-nombre").value = "";
+    $("#enf-centro").value = "";
+    $("#enf-correo").value = "";
+    $("#enf-pass").value = "";
     showMessage(`Enfermera registrada y asociada a ${centro.nombre}.`);
   } catch (error) {
-    showMessage("El backend todavía no tiene /nurses; deja listo ese endpoint para guardar la cuenta en BD.", true);
+    showMessage(error.message || "No se pudo registrar la enfermera.", true);
   }
 }
 

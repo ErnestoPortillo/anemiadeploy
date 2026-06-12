@@ -3,6 +3,8 @@ const LIMA_DISTRICTS = window.APP_CONFIG?.LIMA_DISTRICTS || [];
 
 const role = localStorage.getItem("role");
 const authToken = localStorage.getItem("authToken");
+const medicalCenterName = localStorage.getItem("medicalCenterName") || "No asignado";
+const medicalCenterDistrict = localStorage.getItem("medicalCenterDistrict") || "";
 const ROLE_SCREENS = {
   nurse: ["#enfermera"],
   doctor: ["#medico"],
@@ -65,6 +67,13 @@ function parseOrNull(value, asNumber = false) {
 function setText(selector, value) {
   const node = $(selector);
   if (node) node.textContent = value;
+}
+
+function renderSessionCenter() {
+  const label = medicalCenterDistrict && medicalCenterName !== "No asignado"
+    ? `${medicalCenterName} - ${medicalCenterDistrict}`
+    : medicalCenterName;
+  setText("#session-center", label || "No asignado");
 }
 
 function setPredictMessage(message, isError = false) {
@@ -369,6 +378,7 @@ function pintarCoordinador() {
 });
 
 applyRoleAccess();
+renderSessionCenter();
 renderDistrictFilters();
 pintarTabla();
 mostrarDetallePaciente(0);

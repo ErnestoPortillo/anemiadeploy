@@ -1,11 +1,3 @@
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(80) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role VARCHAR(30) NOT NULL DEFAULT 'nurse',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS medical_centers (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(120) UNIQUE NOT NULL,
@@ -18,6 +10,16 @@ CREATE INDEX IF NOT EXISTS ix_medical_centers_nombre
 
 CREATE INDEX IF NOT EXISTS ix_medical_centers_distrito
     ON medical_centers (distrito);
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(80) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role VARCHAR(30) NOT NULL DEFAULT 'nurse',
+    full_name VARCHAR(120),
+    medical_center_id INTEGER REFERENCES medical_centers(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 INSERT INTO users (username, password_hash, role)
 VALUES

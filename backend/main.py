@@ -16,6 +16,7 @@ import joblib
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from passlib.context import CryptContext
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 try:
@@ -66,6 +67,7 @@ def health():
 @app.on_event("startup")
 def seed_default_users():
     Base.metadata.create_all(bind=engine)
+    ensure_user_profile_columns()
 
     if not SEED_DEFAULT_USERS:
         return
@@ -90,6 +92,24 @@ def seed_default_users():
         db.commit()
     finally:
         db.close()
+
+
+def ensure_user_profile_columns():
+    inspector = inspect(engine)
+    user_columns = {column["name"] for column in inspector.get_columns("users")}
+    statements = []
+
+    if "full_name" not in user_columns:
+        statements.append("ALTER TABLE users ADD COLUMN full_name VARCHAR(120)")
+    if "medical_center_id" not in user_columns:
+        statements.append("ALTER TABLE users ADD COLUMN medical_center_id INTEGER REFERENCES medical_centers(id)")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
 
 def get_cors_origins() -> list[str]:
     origins = os.getenv("CORS_ORIGINS", "")
@@ -258,6 +278,13 @@ class MedicalCenterRequest(BaseModel):
     distrito: str
 
 
+class NurseRequest(BaseModel):
+    nombre: str
+    centro_id: int
+    correo: str
+    password: str
+
+
 def _b64url_encode(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("utf-8")
 
@@ -338,6 +365,21 @@ def require_roles(*roles: str):
     return dependency
 
 
+def user_session_payload(user: User) -> dict:
+    center = user.medical_center
+    return {
+        "status": "ok",
+        "role": user.role,
+        "userId": user.id,
+        "username": user.username,
+        "fullName": user.full_name or user.username,
+        "medicalCenterId": center.id if center else None,
+        "medicalCenterName": center.nombre if center else "No asignado",
+        "medicalCenterDistrict": center.distrito if center else "",
+        "token": create_access_token(user),
+    }
+
+
 @app.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == data.username).first()
@@ -355,13 +397,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         password_ok = False
 
     if password_ok:
-        return {
-            "status": "ok",
-            "role": user.role,
-            "userId": user.id,
-            "username": user.username,
-            "token": create_access_token(user),
-        }
+        return user_session_payload(user)
 
     return {"status": "error", "message": "Credenciales incorrectas"}
 
@@ -406,6 +442,54 @@ def create_medical_center(data: MedicalCenterRequest, db: Session = Depends(get_
         "id": center.id,
         "nombre": center.nombre,
         "distrito": center.distrito,
+    }
+
+
+@app.post("/nurses", status_code=status.HTTP_201_CREATED)
+def create_nurse(data: NurseRequest, db: Session = Depends(get_db)):
+    nombre = data.nombre.strip()
+    correo = data.correo.strip().lower()
+    password = data.password
+
+    if not nombre or not correo or not password or not data.centro_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Completa enfermera, centro medico, correo y contrasena temporal.",
+        )
+
+    center = db.query(MedicalCenter).filter(MedicalCenter.id == data.centro_id).first()
+    if not center:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="El centro medico seleccionado no existe.",
+        )
+
+    existing = db.query(User).filter(User.username == correo).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe una cuenta con ese correo.",
+        )
+
+    nurse = User(
+        username=correo,
+        password_hash=pwd_context.hash(password[:72]),
+        role="nurse",
+        full_name=nombre,
+        medical_center_id=center.id,
+    )
+    db.add(nurse)
+    db.commit()
+    db.refresh(nurse)
+
+    return {
+        "id": nurse.id,
+        "nombre": nurse.full_name,
+        "correo": nurse.username,
+        "role": nurse.role,
+        "medicalCenterId": center.id,
+        "medicalCenterName": center.nombre,
+        "medicalCenterDistrict": center.distrito,
     }
 
 
