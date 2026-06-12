@@ -83,16 +83,16 @@ function setPredictMessage(message, isError = false) {
 }
 
 const TRIAGE_REQUIRED_FIELDS = [
-  { id: "child_age_months", label: "Edad (meses)" },
+  { id: "child_age_months", label: "Edad (meses)", mustBePositive: true },
   { id: "child_sex", label: "Sexo" },
-  { id: "child_weight_kg", label: "Peso (kg)" },
-  { id: "child_height_cm", label: "Talla (cm)" },
-  { id: "mother_age_years", label: "Edad de la madre" },
+  { id: "child_weight_kg", label: "Peso (kg)", mustBePositive: true },
+  { id: "child_height_cm", label: "Talla (cm)", mustBePositive: true },
+  { id: "mother_age_years", label: "Edad de la madre", mustBePositive: true },
   { id: "mother_education_level_summary", label: "Nivel educativo" },
-  { id: "mother_weight_kg", label: "Peso de la madre" },
-  { id: "mother_height_cm", label: "Talla de la madre" },
+  { id: "mother_weight_kg", label: "Peso de la madre", mustBePositive: true },
+  { id: "mother_height_cm", label: "Talla de la madre", mustBePositive: true },
   { id: "birth_order", label: "Orden de nacimiento" },
-  { id: "birth_interval_months", label: "Intervalo (meses)" },
+  { id: "birth_interval_months", label: "Intervalo (meses)", mustBePositive: true },
   { id: "cigarettes_last24h", label: "Cigarrillos ultimas 24h" },
   { id: "marital_status", label: "Estado civil" },
   { id: "currently_pregnant", label: "Actualmente embarazada" },
@@ -107,13 +107,20 @@ function clearTriageValidation() {
 }
 
 function validateTriageForm() {
-  const missing = TRIAGE_REQUIRED_FIELDS.filter(({ id }) => {
+  const missing = [];
+  const invalid = [];
+
+  TRIAGE_REQUIRED_FIELDS.forEach(({ id, label, mustBePositive }) => {
     const field = $(`#${id}`);
     const isEmpty = field.value === "";
-    field.classList.toggle("input-error", isEmpty);
-    if (isEmpty) field.setAttribute("aria-invalid", "true");
+    const isInvalid = !isEmpty && mustBePositive && Number(field.value) <= 0;
+
+    field.classList.toggle("input-error", isEmpty || isInvalid);
+    if (isEmpty || isInvalid) field.setAttribute("aria-invalid", "true");
     else field.removeAttribute("aria-invalid");
-    return isEmpty;
+
+    if (isEmpty) missing.push({ id, label });
+    if (isInvalid) invalid.push({ id, label });
   });
 
   if (missing.length) {
@@ -123,13 +130,21 @@ function validateTriageForm() {
     return false;
   }
 
+  if (invalid.length) {
+    const firstInvalid = $(`#${invalid[0].id}`);
+    firstInvalid.focus();
+    setPredictMessage(`Ingresa valores mayores que 0 en: ${invalid.map((item) => item.label).join(", ")}.`, true);
+    return false;
+  }
+
   return true;
 }
 
-TRIAGE_REQUIRED_FIELDS.forEach(({ id }) => {
+TRIAGE_REQUIRED_FIELDS.forEach(({ id, mustBePositive }) => {
   const field = $(`#${id}`);
   field.addEventListener(field.tagName === "SELECT" ? "change" : "input", () => {
-    if (field.value !== "") {
+    const isValidValue = field.value !== "" && (!mustBePositive || Number(field.value) > 0);
+    if (isValidValue) {
       field.classList.remove("input-error");
       field.removeAttribute("aria-invalid");
     }
